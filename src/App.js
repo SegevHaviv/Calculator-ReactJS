@@ -1,65 +1,6 @@
 import React, { useState } from "react";
 import "./App.css";
-
-class AutoScalingText extends React.Component {
-  state = {
-    scale: 1
-  };
-
-  componentDidUpdate() {
-    const { scale } = this.state
-
-    const node = this.node
-    const parentNode = node.parentNode
-
-    const availableWidth = parentNode.offsetWidth
-    const actualWidth = node.offsetWidth
-    const actualScale = availableWidth / actualWidth
-
-    if (scale === actualScale)
-      return
-
-    if (actualScale < 1) {
-      this.setState({ scale: actualScale })
-    } else if (scale < 1) {
-      this.setState({ scale: 1 })
-    }
-  }
-
-  render() {
-    const { scale } = this.state
-
-    return (
-      <div
-        className="auto-scaling-text"
-        style={{ transform: `scale(${scale},${scale})` }}
-        ref={node => this.node = node}
-      >{this.props.children}</div>
-    )
-  }
-}
-
-function CalculatorDisplay(props) {
-
-  const language = navigator.language || 'en-US'
-  let formattedValue = parseFloat(props.value).toLocaleString(language, {
-    useGrouping: true,
-    maximumFractionDigits: 6
-  })
-
-  // Add back missing .0 in e.g. 12.0
-  const match = props.value.match(/\.\d*?(0*)$/)
-
-  if (match)
-    formattedValue += (/[1-9]/).test(match[0]) ? match[1] : match[0]
-
-  return (
-    <div {...props} className="calculator-display">
-      <AutoScalingText>{formattedValue}</AutoScalingText>
-    </div>
-  )
-}
-
+import CalculatorDisplay from "./components/CalculatorDisplay";
 
 function App(props) {
   const [displayValue, setDisplayValue] = useState("0");
@@ -109,7 +50,7 @@ function App(props) {
 
         {/*fifth row */}
         <div className="row">
-          <button className="button" style={{ flex: "2.3" }} onClick={() => onDigitInput(0)}> 0 </button>
+          <button className="button" style={{ flex: "2.3" }} onClick={() => onDigitInput("0")}>0</button>
           <button className="button" onClick={() => onDotInput()}>.</button>
           <button className="button operator-button" onClick={() => onOperatorInput("=")}>=</button>
         </div>
@@ -157,14 +98,20 @@ function App(props) {
   }
 
   function onOperatorInput(operatorInserted) {
-    console.log(operatorInserted);
     const inputValue = parseFloat(displayValue);
 
     if (prevValue == null) {
       setPrevValue(inputValue);
     } else if (operator) {
       const currentValue = prevValue;
-      const newValue = CalculatorOperations[operator](currentValue, inputValue);
+      let newValue = CalculatorOperations[operator](currentValue, inputValue);
+
+      // Incase of 0/0
+      if (isNaN(newValue)) {
+        newValue = Number.POSITIVE_INFINITY;
+        console.log(newValue);
+      }
+
 
       setPrevValue(newValue);
       setDisplayValue(String(newValue));
